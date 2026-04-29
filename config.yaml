@@ -1,0 +1,107 @@
+# ============================================================================
+# CONFIGURATION DU SYSTÈME MOT (Multiple Object Tracking)
+# ============================================================================
+
+# ============================================================================
+# GRILLE - Paramètres de la grille spatiale
+# ============================================================================
+grid:
+  Nx: 100          # Largeur de la grille
+  Ny: 100          # Hauteur de la grille
+  dx: 1.0          # Pas spatial en x
+  dy: 1.0          # Pas spatial en y
+
+# ============================================================================
+# PSF - Fonction d'étalement ponctuel (Point Spread Function)
+# ============================================================================
+psf:
+  sigma_s: 1.0     # Écart-type de la PSF gaussienne
+  I0: 35.0         # Intensité maximale
+
+# ============================================================================
+# MESURES - Paramètres de bruit de mesure
+# ============================================================================
+measurement:
+  R: 1.0           # Variance du bruit de mesure
+
+# ============================================================================
+# DYNAMIQUE - Modèle de mouvement (Coordinated Turn)
+# ============================================================================
+dynamics:
+  dt: 1.0                      # Pas de temps
+  sigma_w: 0.5                 # Variance du bruit de processus
+  sigma_u: 0.008726            # Variance du bruit de rotation (π/360)
+
+# ============================================================================
+# SURVIE ET NAISSANCE
+# ============================================================================
+survival:
+  Ps: 0.99        # Probabilité de survie à chaque pas de temps
+
+birth_general:
+  Pb: 0.01         # Probabilité de naissance à chaque pas
+  C_birth:         # Matrice de covariance de naissance (5x5)
+    - [1.0, 0.0, 0.0, 0.0, 0.0]
+    - [0.0, 1.0, 0.0, 0.0, 0.0]
+    - [0.0, 0.0, 1.0, 0.0, 0.0]
+    - [0.0, 0.0, 0.0, 1.0, 0.0]
+    - [0.0, 0.0, 0.0, 0.0, 0.00030462]  # (π/180)²
+
+# ============================================================================
+# TEMPOREL
+# ============================================================================
+temporal:
+  T: 100           # Nombre total de pas de temps
+
+# ============================================================================
+# OBJETS - Définition des objets/cibles à tracker
+# ============================================================================
+objects:
+  # --- OBJET 0 ---
+  - id: 0
+    t_birth: 0
+    t_dead: 70
+    position_init: [20, 80]
+    velocity_init: [0.9, -0.6]
+    omega_init: 0.015
+    Pb: 0.01  # Probabilité de naissance spécifique (peut être override)
+  
+  # --- OBJET 1 ---
+  - id: 1
+    t_birth: 0
+    t_dead: 80
+    position_init: [80, 80]
+    velocity_init: [-0.8, -0.5]
+    omega_init: 0.015
+    Pb: 0.01
+  
+  # --- OBJET 2 ---
+  - id: 2
+    t_birth: 19
+    t_dead: 100
+    position_init: [80, 20]
+    velocity_init: [-0.8, 0.6]
+    omega_init: 0.012
+    Pb: 0.01
+  
+  # --- OBJET 3 ---
+  - id: 3
+    t_birth: 29
+    t_dead: 100
+    position_init: [20, 20]
+    velocity_init: [0.8, 0.8]
+    omega_init: -0.012
+    Pb: 0.01
+
+# ============================================================================
+# PARTICLE FLOW GROMOV
+# ============================================================================
+particle_flow:
+  n_steps: 20     # Nombre d'étapes d'intégration
+  sigma_drift: 0.001  # Amplitude de la diffusion stochastique
+
+# ============================================================================
+# GIBBS - Paramètres de l'inférence Gibbs
+# ============================================================================
+gibbs:
+  iterations: 10
