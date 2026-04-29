@@ -90,73 +90,63 @@ class VoGibbsMOT:
 
     
 
-    # def particle_flow_gromov(self, z_t, S_others, x_init, lbl, Xt_minus, Xt_plus, is_birth, n_steps=None):
-    #     """
-    #     Particle Flow optimisant p(x | z, X-, X+)
-    #     Prend en compte f_avant (X-) et f_arriere (X+)
-    #     """
-    #     if n_steps is None:
-    #         n_steps = self.model.get('particle_flow', 'n_steps')
-            
-    #     x = x_init.clone().detach().requires_grad_(True)
-    #     dt = 1.0 / n_steps
+    def particle_flow_gromov(self, z_t, S_others, x_init, lbl, Xt_minus, Xt_plus, is_birth, n_steps=None):
         
-    #     # Paramètres de précision (Variances des modèles)
-    #     Q_process = self.model.get('dynamics', 'sigma_w')
+        if n_steps is None:
+            n_steps = self.model.get('particle_flow', 'n_steps')
+            
+        x = x_init.clone().detach().requires_grad_(True)
+        dt = 1.0 / n_steps
         
-    #     for i in range(n_steps):
-    #         tau = (i + 1) * dt
+        Q_process = self.model.get('dynamics', 'sigma_w')
+        
+        for i in range(n_steps):
+            tau = (i + 1) * dt
             
-    #         # --- 1. Log-Vraisemblance log(g) ---
-    #         log_g = self.log_likelihood(x, z_t, S_others)
+            log_g = self.log_likelihood(x, z_t, S_others)
             
-    #         # --- 2. Log-Prior log(p_prior) ---
-    #         log_prior = 0.0
-    #         if is_birth:
-    #             # b(x, l) : Prior de naissance
-    #             mu_b = self.birth_init_means[lbl[1] % len(self.birth_init_means)]
-    #             log_prior += -0.5 * torch.sum((x - mu_b)**2) / 1.0 # Sigma_birth=1
-    #         elif lbl in Xt_minus:
-    #             # f_avant : f_S(x | x_minus)
-    #             x_pred_fwd = self.predict_ct(Xt_minus[lbl])
-    #             log_prior += -0.5 * torch.sum((x - x_pred_fwd)**2) / Q_process
+            log_prior = 0.0
+            if is_birth:
+                # b(x, l) : Prior de naissance
+                mu_b = self.birth_init_means[lbl[1] % len(self.birth_init_means)]
+                log_prior += -0.5 * torch.sum((x - mu_b)**2) / 1.0 # Sigma_birth=1
+            elif lbl in Xt_minus:
+                # f_avant : f_S(x | x_minus)
+                x_pred_fwd = self.predict_ct(Xt_minus[lbl])
+                log_prior += -0.5 * torch.sum((x - x_pred_fwd)**2) / Q_process
 
-    #         if lbl in Xt_plus:
-    #             # f_arriere : f_S(x_plus | x) -> Lissage
-    #             x_next = Xt_plus[lbl]
-    #             x_pred_from_curr = self.predict_ct(x)
-    #             log_prior += -0.5 * torch.sum((x_next - x_pred_from_curr)**2) / Q_process
+            if lbl in Xt_plus:
+                # f_arriere : f_S(x_plus | x) -> Lissage
+                x_next = Xt_plus[lbl]
+                x_pred_from_curr = self.predict_ct(x)
+                log_prior += -0.5 * torch.sum((x_next - x_pred_from_curr)**2) / Q_process
 
-    #         # --- 3. Densité Cible (Log-Posterior) ---
-    #         # log(target) = log(prior) + tau * log(g)
-    #         # On utilise tau sur la vraisemblance pour le transport progressif
-    #         target = log_prior + tau * log_g
             
-    #         # --- 4. Calcul Gradient et Hessienne de la cible complète ---
-    #         grad_target = torch.autograd.grad(target, x, create_graph=True)[0]
+            target = log_prior + tau * log_g
             
-    #         hessian_rows = []
-    #         for g in grad_target:
-    #             hessian_rows.append(torch.autograd.grad(g, x, retain_graph=True)[0])
-    #         H_target = torch.stack(hessian_rows)
+            grad_target = torch.autograd.grad(target, x, create_graph=True)[0]
+            
+            hessian_rows = []
+            for g in grad_target:
+                hessian_rows.append(torch.autograd.grad(g, x, retain_graph=True)[0])
+            H_target = torch.stack(hessian_rows)
 
-    #         # Inversion (Gromov fz)
-    #         # On ajoute une petite régularisation pour éviter les singularités
-    #         H_stable = H_target #- torch.eye(5, device=self.device) * 1e-4
             
-    #         try:
-    #             drift = - torch.linalg.inv(H_stable) @ grad_target
-    #         except:
-    #             drift = grad_target * 0.1
+            H_stable = H_target #- torch.eye(5, device=self.device) * 1e-4
+            
+            try:
+                drift = - torch.linalg.inv(H_stable) @ grad_target
+            except:
+                drift = grad_target * 0.1
 
-    #         with torch.no_grad():
-    #             x += drift * dt
-    #             # SDE diffusion pour exploration
-    #             sigma_drift = self.model.get('particle_flow', 'sigma_drift')
-    #             x += torch.randn_like(x) * sigma_drift
-    #         x.requires_grad_(True)
+            with torch.no_grad():
+                x += drift * dt
+                # SDE diffusion pour exploration
+                sigma_drift = self.model.get('particle_flow', 'sigma_drift')
+                x += torch.randn_like(x) * sigma_drift
+            x.requires_grad_(True)
             
-    #     return x.detach()
+        return x.detach()
     
 
     def particle_flow_gromov_gpu(self, z_t, S_others, x_init, lbl, Xt_minus, Xt_plus, is_birth, n_steps=10):
@@ -165,14 +155,14 @@ class VoGibbsMOT:
         dt = 1.0 / n_steps
 
         sigma = self.model.get('particle_flow', 'sigma_drift')
-        lam = self.lambda_
+        #lam = self.lambda_
 
         I = lambda: torch.eye(x.shape[-1], device=x.device)
 
         for i in range(n_steps):
 
             tau = (i + 1) / n_steps
-
+            lam = tau
             log_g = self.log_likelihood(x, z_t, S_others)
 
             log_p = 0.0
@@ -232,10 +222,10 @@ class VoGibbsMOT:
         L_total = L_survie + L_birth
         
 
-        print(f"Labels à t-1 (t={t}): {L_survie}")
-        print(f"Labels de naissance à t={t}: {L_birth}")
-        print(f"Label à t+1 (t={t}): {list(Xt_plus.keys())}")
-        print(f"Label a t courant : {list(Xt_curr.keys())}  ")
+        # print(f"Labels à t-1 (t={t}): {L_survie}")
+        # print(f"Labels de naissance à t={t}: {L_birth}")
+        # print(f"Label à t+1 (t={t}): {list(Xt_plus.keys())}")
+        # print(f"Label a t courant : {list(Xt_curr.keys())}  ")
         #self.print_chromatic_groups(t, Xt_minus)
 
         S_total = torch.zeros((self.Nx, self.Ny), device=self.device)
@@ -283,7 +273,7 @@ class VoGibbsMOT:
             
             r_post = torch.exp(log_u - torch.logsumexp(torch.stack([log_u, log_v]), 0))
 
-            print(f"    Label {lbl}: r_prior={r_prior:.3f}, log_g_with={log_g_with:.2f}, log_g_without={log_g_without:.2f}, r_post={r_post:.3f}")
+            # print(f"    Label {lbl}: r_prior={r_prior:.3f}, log_g_with={log_g_with:.2f}, log_g_without={log_g_without:.2f}, r_post={r_post:.3f}")
             if torch.rand(1, device=self.device) < r_post:
                 Xt_curr[lbl] = x_updated
                 S_total = S_others + self.get_h(x_updated)
