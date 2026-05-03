@@ -1,12 +1,4 @@
-Julia implementation of 
 
-just need Nvidia GPU
-
-
-
-Here is a neutral and basic **README.md** draft in English:
-
----
 
 # MOT Particle Flow Simulation
 
