@@ -1,6 +1,5 @@
 
 
-# MOT Particle Flow Simulation
 
 This repository contains a simplified and preliminary implementation of the numerical simulations described in the paper: [**\[ Multi-Object Posterior Computation via Gibbs Sampling\]**](https://arxiv.org/pdf/2604.12449v1). 
 
