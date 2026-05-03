@@ -16,7 +16,7 @@ grid:
 # ============================================================================
 psf:
   sigma_s: 1.0     # Écart-type de la PSF gaussienne
-  I0: 35.0         # Intensité maximale
+  I0: 25.0         # Intensité maximale
 
 # ============================================================================
 # MESURES - Paramètres de bruit de mesure
@@ -36,7 +36,7 @@ dynamics:
 # SURVIE ET NAISSANCE
 # ============================================================================
 survival:
-  Ps: 0.99        # Probabilité de survie à chaque pas de temps
+  Ps: 0.999        # Probabilité de survie à chaque pas de temps
 
 birth_general:
   Pb: 0.01         # Probabilité de naissance à chaque pas
@@ -97,8 +97,9 @@ objects:
 # PARTICLE FLOW GROMOV
 # ============================================================================
 particle_flow:
-  n_steps: 20     # Nombre d'étapes d'intégration
-  sigma_drift: 0.001  # Amplitude de la diffusion stochastique
+  n_steps: 30      
+  sigma_drift: 0.01  
+  n_particles: 200
 
 # ============================================================================
 # GIBBS - Paramètres de l'inférence Gibbs
