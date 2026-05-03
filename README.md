@@ -20,12 +20,13 @@ The following Julia packages are required:
 *   `CUDA.jl`: For GPU-accelerated computing.
 *   `StaticArrays.jl`: For efficient handling of state vectors.
 *   `PlotlyJS.jl`: For visualizing results and trajectories.
+*   `YAML.jl`: To load config.
 
 ## Usage
 
 1.  Ensure all dependencies are installed:
     ```julia
-    using Pkg; Pkg.add(["CUDA", "StaticArrays", "PlotlyJS"])
+    using Pkg; Pkg.add(["CUDA", "StaticArrays", "PlotlyJS", "YAML"])
     ```
 2.  Execute the main simulation script:
     ```bash
